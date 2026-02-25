@@ -1,0 +1,261 @@
+# All-In Margin Calculator: Formula Reference Card
+
+## Quick Formula Guide (Copy into Claude Code as needed)
+
+### Date Calculation
+```
+Python:
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+frequency_map = {
+    'Monthly': 1,
+    'Quarterly': 3,
+    'Semiannually': 6
+}
+
+period_date = disbursement_date + relativedelta(months=period * frequency_map[frequency])
+```
+
+### Days Between Periods
+```
+current_date = datetime(2026, 7, 1)
+previous_date = datetime(2026, 4, 1)
+days = (current_date - previous_date).days
+```
+
+### Interest Calculation
+```
+# Interest only accrues during grace periods (and after)
+if period <= grace_periods:
+    interest = margin * beginning_balance * (days_in_period / 360)
+else:
+    interest = 0
+```
+
+### Upfront Fee
+```
+# One-time fee when first draw occurs
+if period <= draw_period and period < grace_period and date == disbursement_date:
+    upfront_fee_payment = loan_amount * upfront_fee_rate
+else:
+    upfront_fee_payment = 0
+```
+
+### Commitment Fee  
+```
+# Fee on undrawn amount during draw period
+if period <= draw_period:
+    undrawn = loan_amount - cumulative_draws_to_date
+    commitment_fee = undrawn * commitment_fee_rate * (days_in_period / 360)
+else:
+    commitment_fee = 0
+```
+
+### Amortization - Bullet Profile
+```
+if amortization_profile == 'Bullet':
+    if period == 0:
+        amortization = 0  # Draw period
+    elif period == num_periods:
+        amortization = loan_amount  # Final payment
+    else:
+        amortization = 0
+else:
+    # See Ad-hoc section
+```
+
+### Amortization - Ad-hoc Profile
+```
+# Method 1: Using a lookup dictionary
+amortization_table = {
+    0: 0,
+    33: 0.01,
+    45: 0.02,
+    57: 0.03,
+    ...
+}
+
+period_months = (period_date.year - start_date.year) * 12 + \
+                (period_date.month - start_date.month)
+
+# Find the closest month <= period_months in the table
+applicable_month = max([m for m in amortization_table.keys() if m <= period_months])
+amortization_rate = amortization_table[applicable_month]
+amortization_payment = loan_amount * amortization_rate
+
+# OR - if amortization_table contains dollar amounts instead of %:
+amortization_payment = amortization_table[applicable_month]
+```
+
+### Balance Tracking
+```
+balance = 0
+for period in range(num_periods + 1):
+    if period == 0:
+        beginning_balance = 0
+        draws = loan_amount  # 100% draw in period 0
+        amortization = 0
+    else:
+        beginning_balance = balance
+        draws = 0  # No draws after period 0
+        amortization = <calculated above>
+    
+    ending_balance = beginning_balance + draws - amortization
+    
+    # Ensure balance doesn't go negative
+    if ending_balance < 0:
+        raise ValueError(f"Negative balance at period {period}")
+    
+    balance = ending_balance
+```
+
+### Cash Flow Arrays for IRR
+
+```
+# Column T: Interest & Principal only (no fees)
+# Used to calculate base IR Spread
+column_T = []
+for period in range(num_periods + 1):
+    if period <= draw_period:
+        cf = interest[period] - draws[period] + amortization[period]
+    else:
+        cf = 0
+    column_T.append(cf)
+
+# Column U: Add Upfront Fee
+# Used to calculate upfront fee impact on IRR
+column_U = []
+for period in range(num_periods + 1):
+    cf = column_T[period] + upfront_fee[period]
+    column_U.append(cf)
+
+# Column V: Add Commitment Fee  
+# Used to calculate all-in margin
+column_V = []
+for period in range(num_periods + 1):
+    cf = column_U[period] + commitment_fee[period]
+    column_V.append(cf)
+
+# Column Z: Add Reserve Impact
+# Used to calculate margin net of credit reserves
+reserve_rate = probability_of_default * loss_given_default
+column_Z = []
+for period in range(num_periods + 1):
+    reserve = -ending_balance[period] * reserve_rate  # Negative (cost)
+    cf = column_V[period] + reserve
+    column_Z.append(cf)
+```
+
+### IRR Calculation
+```
+import numpy_financial as npf
+
+def calculate_irr_annualized(cashflows, frequency):
+    """
+    Calculate IRR and annualize it based on payment frequency
+    """
+    irr_multiplier = {
+        'Monthly': 12,
+        'Quarterly': 4,
+        'Semiannually': 2
+    }
+    
+    try:
+        # IRR calculation (returns decimal, e.g., 0.01572 for 1.572%)
+        irr = npf.irr(cashflows)
+        
+        # Handle NaN or None
+        if irr is None or np.isnan(irr):
+            return 0.0
+        
+        # Annualize
+        annualized_irr = irr * irr_multiplier[frequency]
+        return annualized_irr
+    except:
+        return 0.0
+
+# Example usage:
+ir_spread = calculate_irr_annualized(column_T, 'Semiannually')  # ~0.01572
+upfront_impact = calculate_irr_annualized(column_U, 'Semiannually') - ir_spread
+commitment_impact = calculate_irr_annualized(column_V, 'Semiannually') - ir_spread - upfront_impact
+all_in_margin = calculate_irr_annualized(column_V, 'Semiannually')  # Shortcut: same as above
+irr_net_reserves = calculate_irr_annualized(column_Z, 'Semiannually')
+```
+
+### Weighted Average Life
+```
+def calculate_weighted_average_life(periods_data, num_periods):
+    """
+    WAL = SUM(period * principal_payment / total_principal) / 12
+    """
+    total_principal = sum(p['amortization'] for p in periods_data)
+    
+    if total_principal == 0:
+        return 0.0
+    
+    weighted_sum = 0.0
+    for period_data in periods_data:
+        if period_data['amortization'] > 0:
+            # Weight by period number (0, 1, 2, ...) and payment proportion
+            weight = period_data['period_number'] * \
+                     (period_data['amortization'] / total_principal)
+            weighted_sum += weight
+    
+    # Divide by 12 to convert from months to years
+    wal_years = weighted_sum / 12.0
+    
+    return wal_years
+```
+
+### Validation Check
+```
+total_draws = sum(draws_column)
+if abs(total_draws - loan_amount) > 1.0:  # Allow $1 rounding
+    validation_status = "Review Draw"
+else:
+    validation_status = "OK"
+```
+
+---
+
+## Example Calculation Walkthrough
+
+**La Grulla Example:**
+
+| Period | Date       | Days | Draws   | Balance   | Interest | Upfront | Commitment | Column T | WAL Weight |
+|--------|------------|------|---------|-----------|----------|---------|------------|----------|-----------|
+| 0      | 2026-04-01 | 0    | 1.3M    | 1.3M      | 0        | 0       | 0          | -1.3M    | 0         |
+| 1      | 2026-10-01 | 183  | 0       | 1.3M      | 10,234   | 0       | 0          | 10,234   | 0         |
+| 2      | 2027-04-01 | 182  | 0       | 1.3M      | 10,153   | 0       | 0          | 10,153   | 0         |
+| ...    | ...        | ...  | ...     | ...       | ...      | ...     | ...        | ...      | ...       |
+| 50     | 2051-04-01 | 182  | 0       | ~0        | ~11      | 0       | 0          | 1.3M+11  | 50*26M    |
+
+Column T sum ≈ 0 (invested $1.3M, got back $1.3M + interest)
+IRR(T) ≈ 0.00786 (half-year) × 2 = 0.01572 (annual) = 1.572%
+WAL = Total weighted payments / 12 ≈ 14.69 years
+
+---
+
+## Tips for Claude Code
+
+1. **When asking for help with formulas:**
+   - Provide 3-5 example rows with actual numbers
+   - Show what you're getting vs. what you expect
+   - Paste the Python code you're using
+
+2. **When calculations are off:**
+   - Check: Are rates being stored as decimals (0.01) or percentages (1)?
+   - Check: Are you multiplying interest by (days/360)?
+   - Check: Is IRR being annualized with the correct multiplier?
+
+3. **Common mistakes:**
+   - Forgetting to multiply interest by the fraction of the period (days/360)
+   - Not handling grace periods correctly (interest still accrues)
+   - Commitment fee should be on UNDRAWN, not total amount
+   - Upfront fee charged only ONCE at disbursement, not every period
+
+4. **Testing:**
+   - Run La Grulla example after each major change
+   - Compare to Excel (cell by cell if possible)
+   - Print intermediate values (first 5 periods + last period) for debugging
