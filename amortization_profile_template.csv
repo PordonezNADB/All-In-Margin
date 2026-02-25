@@ -1,0 +1,25 @@
+month,amortization_amount_or_percent,notes
+0,0,Initial period - no amortization
+33,1,Year 2.75 - amortization begins
+45,2,Year 3.75
+57,3,Year 4.75
+69,4,Year 5.75
+81,5,Year 6.75
+93,6,Year 7.75
+105,7,Year 8.75
+117,8,Year 9.75
+129,9,Year 10.75
+141,10,Year 11.75
+153,11,Year 12.75
+165,12,Year 13.75
+177,13,Year 14.75
+189,14,Year 15.75
+201,15,Year 16.75
+213,16,Year 17.75
+225,17,Year 18.75
+237,18,Year 19.75
+249,19,Year 20.75
+261,20,Year 21.75
+273,21,Year 22.75
+285,22,Year 23.75
+297,23,Year 24.75
