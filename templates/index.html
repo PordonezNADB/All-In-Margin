@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All-In Margin Calculator | NADB</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+
+  <style>
+    :root {
+      --nadb-blue:    #003F87;
+      --nadb-mid:     #0066CC;
+      --nadb-light:   #E8F0FA;
+      --nadb-green:   #198754;
+      --nadb-warn:    #dc3545;
+      --panel-bg:     #f8f9fc;
+      --border-color: #d0d7e2;
+    }
+
+    body {
+      background: #eef1f6;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 0.88rem;
+      color: #222;
+    }
+
+    /* ── Navbar ── */
+    .navbar-nadb {
+      background: var(--nadb-blue);
+      padding: 0.55rem 1.5rem;
+    }
+    .navbar-nadb .brand-text {
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .navbar-nadb .brand-sub {
+      color: rgba(255,255,255,0.65);
+      font-size: 0.77rem;
+      margin-left: 1rem;
+    }
+
+    /* ── Layout ── */
+    .main-row {
+      min-height: calc(100vh - 56px);
+    }
+    .left-panel {
+      background: #fff;
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      max-height: calc(100vh - 56px);
+      position: sticky;
+      top: 56px;
+    }
+    .right-panel {
+      background: var(--panel-bg);
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    /* ── Section headers ── */
+    .section-header {
+      background: var(--nadb-light);
+      border-left: 4px solid var(--nadb-blue);
+      padding: 0.4rem 0.75rem;
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: var(--nadb-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── Form elements ── */
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #444;
+      margin-bottom: 0.25rem;
+    }
+    .form-control, .form-select {
+      font-size: 0.83rem;
+      border-color: var(--border-color);
+      padding: 0.35rem 0.55rem;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--nadb-mid);
+      box-shadow: 0 0 0 0.18rem rgba(0,102,204,0.18);
+    }
+    .input-group-text {
+      font-size: 0.8rem;
+      background: var(--nadb-light);
+      border-color: var(--border-color);
+      color: var(--nadb-blue);
+      font-weight: 600;
+    }
+    .form-text {
+      font-size: 0.73rem;
+      color: #777;
+    }
+
+    /* ── Profile toggle ── */
+    .profile-toggle .btn {
+      font-size: 0.8rem;
+      padding: 0.35rem 1rem;
+    }
+    .profile-toggle .btn-check:checked + .btn-outline-primary {
+      background: var(--nadb-blue);
+      border-color: var(--nadb-blue);
+      color: #fff;
+    }
+
+    /* ── Ad-hoc table ── */
+    #adhocSection {
+      background: #f0f5ff;
+      border: 1px solid #b8caed;
+      border-radius: 6px;
+      padding: 0.85rem;
+      margin-top: 0.5rem;
+    }
+    #adhocSection .table {
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+    #adhocSection .table th {
+      background: var(--nadb-blue);
+      color: #fff;
+      font-weight: 500;
+      padding: 0.35rem 0.5rem;
+    }
+    #adhocSection .table td {
+      padding: 0.25rem 0.4rem;
+      vertical-align: middle;
+    }
+    #adhocSection .table td input {
+      font-size: 0.8rem;
+      padding: 0.2rem 0.35rem;
+    }
+    .btn-row-del {
+      color: var(--nadb-warn);
+      background: none;
+      border: none;
+      padding: 0.1rem 0.3rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-row-del:hover { color: #a00; }
+
+    /* ── Calculate button ── */
+    .btn-calculate {
+      background: var(--nadb-blue);
+      border-color: var(--nadb-blue);
+      color: #fff;
+      font-weight: 600;
+      padding: 0.5rem 1.75rem;
+      font-size: 0.88rem;
+      letter-spacing: 0.02em;
+      transition: background 0.15s;
+    }
+    .btn-calculate:hover {
+      background: #002d63;
+      border-color: #002d63;
+      color: #fff;
+    }
+    .btn-reset {
+      font-size: 0.83rem;
+      color: #666;
+    }
+
+    /* ── Summary cards ── */
+    .result-card {
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .result-card .card-label {
+      font-size: 0.73rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #777;
+      margin-bottom: 0.3rem;
+    }
+    .result-card .card-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--nadb-blue);
+      line-height: 1.15;
+    }
+    .result-card .card-sub {
+      font-size: 0.76rem;
+      color: #888;
+      margin-top: 0.15rem;
+    }
+    .result-card.card-all-in .card-value {
+      color: var(--nadb-blue);
+    }
+    .badge-ok    { background: #d1f0e0; color: #0a5c3a; }
+    .badge-warn  { background: #ffe5e5; color: #8b0000; }
+    .badge-status {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    /* ── IRR breakdown table ── */
+    .irr-breakdown {
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .irr-breakdown table {
+      margin: 0;
+      font-size: 0.83rem;
+    }
+    .irr-breakdown thead th {
+      background: var(--nadb-blue);
+      color: #fff;
+      font-weight: 500;
+      padding: 0.45rem 0.85rem;
+    }
+    .irr-breakdown tbody td {
+      padding: 0.4rem 0.85rem;
+    }
+    .irr-breakdown .row-total {
+      font-weight: 700;
+      background: var(--nadb-light);
+      border-top: 2px solid var(--nadb-blue);
+    }
+    .irr-breakdown .row-total td { color: var(--nadb-blue); }
+
+    /* ── Schedule table ── */
+    .schedule-wrapper {
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .schedule-wrapper .table {
+      font-size: 0.78rem;
+      margin: 0;
+    }
+    .schedule-wrapper thead th {
+      background: var(--nadb-blue);
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+      padding: 0.4rem 0.6rem;
+      position: sticky;
+      top: 0;
+    }
+    .schedule-wrapper tbody td {
+      padding: 0.3rem 0.6rem;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .schedule-wrapper tbody tr:hover { background: #f0f5ff; }
+    .row-draw { background: #fffbe6 !important; }
+    .row-amort { background: #f0faf4 !important; }
+    .text-num { text-align: right; font-family: 'Courier New', monospace; }
+    .cell-zero { color: #bbb; }
+
+    /* ── Export button ── */
+    .btn-export {
+      font-size: 0.83rem;
+      color: var(--nadb-blue);
+      border-color: var(--nadb-blue);
+    }
+    .btn-export:hover {
+      background: var(--nadb-blue);
+      color: #fff;
+    }
+
+    /* ── Loading spinner ── */
+    #loadingOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.65);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    #loadingOverlay.show { display: flex; }
+
+    /* ── Error alert ── */
+    #errorBox { display: none; }
+
+    /* ── Placeholder ── */
+    #placeholderBox {
+      text-align: center;
+      padding: 5rem 2rem;
+      color: #aaa;
+    }
+    #placeholderBox .bi { font-size: 3rem; margin-bottom: 1rem; color: #ccc; }
+    #resultsBox { display: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 991px) {
+      .left-panel { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border-color); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-nadb">
+    <div class="container-fluid">
+      <span class="brand-text">
+        <i class="bi bi-calculator-fill me-2"></i>All-In Margin Calculator
+      </span>
+      <span class="brand-sub">NADB Infrastructure Finance</span>
+    </div>
+  </nav>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div class="text-center">
+      <div class="spinner-border text-primary mb-2" role="status"></div>
+      <div class="text-muted small">Calculating…</div>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="container-fluid px-0">
+    <div class="row g-0 main-row">
+
+      <!-- ═══════════════ LEFT: Input Panel ═══════════════ -->
+      <div class="col-lg-4 left-panel px-3 py-3">
+        <form id="calcForm" novalidate>
+
+          <!-- 1. Loan Parameters -->
+          <div class="section-header mb-2">Loan Parameters</div>
+          <div class="row g-2 mb-2">
+            <div class="col-7">
+              <label class="form-label">NADB Amount (USD)</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" id="loanAmount" class="form-control" value="1300000"
+                       min="0" step="1000" required />
+              </div>
+            </div>
+            <div class="col-5">
+              <label class="form-label">Number of Periods</label>
+              <input type="number" id="numPeriods" class="form-control" value="50"
+                     min="1" max="360" required />
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Draw Period</label>
+              <input type="number" id="drawPeriod" class="form-control" value="1" min="0" />
+              <div class="form-text">Periods when draws occur</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Payment Frequency</label>
+              <select id="frequency" class="form-select">
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Semiannually" selected>Semiannually</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 2. Interest Rates -->
+          <div class="section-header mb-2">Interest Rates & Margins</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label">Margin – Draw Period</label>
+              <div class="input-group">
+                <input type="number" id="marginDraw" class="form-control" value="1.58"
+                       step="0.001" min="0" />
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Margin – After Draw</label>
+              <div class="input-group">
+                <input type="number" id="marginAfter" class="form-control" value="1.58"
+                       step="0.001" min="0" />
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Step-Up Rate <span class="text-muted">(opt.)</span></label>
+              <div class="input-group">
+                <input type="number" id="stepUp" class="form-control" value="0"
+                       step="0.001" min="0" />
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Step-Up Period <span class="text-muted">(opt.)</span></label>
+              <input type="number" id="stepUpPeriod" class="form-control" value="0" min="0" />
+              <div class="form-text">0 = no step-up</div>
+            </div>
+          </div>
+
+          <!-- 3. Fees -->
+          <div class="section-header mb-2">Fees</div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Upfront Fee</label>
+              <div class="input-group">
+                <input type="number" id="upfrontFee" class="form-control" value="0"
+                       step="0.01" min="0" />
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Commitment Fee</label>
+              <div class="input-group">
+                <input type="number" id="commitmentFee" class="form-control" value="0"
+                       step="0.01" min="0" />
+                <span class="input-group-text">%</span>
+              </div>
+              <div class="form-text">On undrawn balance</div>
+            </div>
+          </div>
+
+          <!-- 4. Dates -->
+          <div class="section-header mb-2">Dates</div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Closing Date</label>
+              <input type="date" id="closingDate" class="form-control" value="2026-04-01" required />
+            </div>
+            <div class="col-6">
+              <label class="form-label">1st Disbursement Date</label>
+              <input type="date" id="disbursementDate" class="form-control" value="2026-04-01" required />
+            </div>
+          </div>
+
+          <!-- 5. Amortization Profile -->
+          <div class="section-header mb-2">Amortization Profile</div>
+          <div class="profile-toggle btn-group mb-2 w-100" role="group">
+            <input type="radio" class="btn-check" name="amortProfile" id="profileBullet" value="Bullet" />
+            <label class="btn btn-outline-primary w-50" for="profileBullet">
+              <i class="bi bi-arrow-right-circle me-1"></i>Bullet
+            </label>
+            <input type="radio" class="btn-check" name="amortProfile" id="profileAdhoc" value="Ad-hoc" checked />
+            <label class="btn btn-outline-primary w-50" for="profileAdhoc">
+              <i class="bi bi-table me-1"></i>Ad-hoc
+            </label>
+          </div>
+          <div class="form-text mb-2">
+            <span id="profileHint">Ad-hoc: enter month offsets and amortization amounts below.</span>
+          </div>
+
+          <!-- Ad-hoc table -->
+          <div id="adhocSection">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong style="font-size:0.8rem; color: var(--nadb-blue);">
+                <i class="bi bi-table me-1"></i>Amortization Schedule
+              </strong>
+              <div class="d-flex gap-2 align-items-center">
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="adhocType" id="typePercent" value="percent" checked />
+                  <label class="form-check-label" for="typePercent" style="font-size:0.77rem">% of loan</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="adhocType" id="typeDollar" value="dollar" />
+                  <label class="form-check-label" for="typeDollar" style="font-size:0.77rem">$ amount</label>
+                </div>
+              </div>
+            </div>
+
+            <div style="max-height:260px; overflow-y:auto;">
+              <table class="table table-sm table-bordered" id="adhocTable">
+                <thead>
+                  <tr>
+                    <th>Month Offset</th>
+                    <th id="adhocValueHeader">Value (%)</th>
+                    <th style="width:32px"></th>
+                  </tr>
+                </thead>
+                <tbody id="adhocBody">
+                  <!-- rows injected by JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex gap-2 mt-1">
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addAdhocRow()">
+                <i class="bi bi-plus-circle me-1"></i>Add Row
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadLaGrulla()">
+                <i class="bi bi-file-earmark-arrow-down me-1"></i>Load La Grulla
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="clearAdhoc()">
+                <i class="bi bi-trash me-1"></i>Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex gap-2 mt-3 pt-2 border-top">
+            <button type="submit" class="btn btn-calculate flex-grow-1">
+              <i class="bi bi-play-fill me-1"></i>Calculate
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-reset" onclick="resetForm()">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+
+        </form>
+      </div><!-- /left-panel -->
+
+      <!-- ═══════════════ RIGHT: Results Panel ═══════════════ -->
+      <div class="col-lg-8 right-panel">
+
+        <!-- Error box -->
+        <div id="errorBox" class="alert alert-danger alert-dismissible d-flex align-items-start gap-2 mb-3">
+          <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+          <div>
+            <strong>Calculation Error</strong>
+            <div id="errorMsg" class="small mt-1"></div>
+          </div>
+          <button type="button" class="btn-close ms-auto" onclick="hideError()"></button>
+        </div>
+
+        <!-- Placeholder -->
+        <div id="placeholderBox">
+          <i class="bi bi-calculator"></i>
+          <p class="fw-semibold" style="color:#999">Enter parameters and click Calculate</p>
+          <p class="small text-muted">Results, amortization schedule, and IRR components will appear here.</p>
+        </div>
+
+        <!-- Results (hidden until first calculation) -->
+        <div id="resultsBox">
+
+          <!-- Summary Cards -->
+          <div class="row g-3 mb-3">
+            <div class="col-sm-4">
+              <div class="result-card card-all-in h-100">
+                <div class="card-label"><i class="bi bi-percent me-1"></i>All-In Margin (IRR)</div>
+                <div class="card-value" id="resAllIn">—</div>
+                <div class="card-sub">Annualized effective rate</div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="result-card h-100">
+                <div class="card-label"><i class="bi bi-clock me-1"></i>Weighted Avg Life</div>
+                <div class="card-value" id="resWAL" style="color:#0a5c3a">—</div>
+                <div class="card-sub">Years to full repayment</div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="result-card h-100">
+                <div class="card-label"><i class="bi bi-check2-circle me-1"></i>Validation</div>
+                <div class="mt-1" id="resValidation">
+                  <span class="badge-status badge-ok">—</span>
+                </div>
+                <div class="card-sub mt-1" id="resValidationDetail"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IRR Component Breakdown -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0 fw-semibold" style="color: var(--nadb-blue);">
+                <i class="bi bi-pie-chart me-1"></i>All-In Margin Components
+              </h6>
+            </div>
+            <div class="irr-breakdown">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th class="text-end">Contribution</th>
+                    <th class="text-end">Cumulative</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody id="irrBreakdown">
+                  <tr><td colspan="4" class="text-muted text-center py-2">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Amortization Schedule -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0 fw-semibold" style="color: var(--nadb-blue);">
+                <i class="bi bi-table me-1"></i>Amortization Schedule
+              </h6>
+              <button class="btn btn-sm btn-export" onclick="exportCSV()">
+                <i class="bi bi-download me-1"></i>Export CSV
+              </button>
+            </div>
+
+            <div class="schedule-wrapper" style="max-height:480px; overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>Date</th>
+                    <th class="text-end">Days</th>
+                    <th class="text-end">Beg. Balance</th>
+                    <th class="text-end">Draws</th>
+                    <th class="text-end">Amortization</th>
+                    <th class="text-end">Interest</th>
+                    <th class="text-end">Upfront Fee</th>
+                    <th class="text-end">Commit. Fee</th>
+                    <th class="text-end">End. Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                  <tr><td colspan="10" class="text-muted text-center py-3">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-muted small mt-1" id="scheduleFooter"></div>
+          </div>
+
+        </div><!-- /resultsBox -->
+      </div><!-- /right-panel -->
+    </div><!-- /row -->
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  // ─────────────────────────────────────────────
+  // La Grulla default ad-hoc schedule
+  // ─────────────────────────────────────────────
+  const LA_GRULLA_ADHOC = [
+    {month:0,  value:0},
+    {month:33, value:1},
+    {month:45, value:2},
+    {month:57, value:3},
+    {month:69, value:4},
+    {month:81, value:5},
+    {month:93, value:6},
+    {month:105,value:7},
+    {month:117,value:8},
+    {month:129,value:9},
+    {month:141,value:10},
+    {month:153,value:11},
+    {month:165,value:12},
+    {month:177,value:13},
+    {month:189,value:14},
+    {month:201,value:15},
+    {month:213,value:16},
+    {month:225,value:17},
+    {month:237,value:18},
+    {month:249,value:19},
+    {month:261,value:20},
+    {month:273,value:21},
+    {month:285,value:22},
+    {month:297,value:23},
+  ];
+
+  // ─────────────────────────────────────────────
+  // Ad-hoc table management
+  // ─────────────────────────────────────────────
+  function renderAdhocTable(data) {
+    const tbody = document.getElementById('adhocBody');
+    tbody.innerHTML = '';
+    data.forEach((row, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="number" class="form-control form-control-sm adhoc-month"
+             value="${row.month}" min="0" /></td>
+        <td><input type="number" class="form-control form-control-sm adhoc-value"
+             value="${row.value}" min="0" step="0.001" /></td>
+        <td>
+          <button type="button" class="btn-row-del" onclick="deleteAdhocRow(this)">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function getAdhocData() {
+    const rows = document.querySelectorAll('#adhocBody tr');
+    return Array.from(rows).map(tr => ({
+      month: parseFloat(tr.querySelector('.adhoc-month').value) || 0,
+      value: parseFloat(tr.querySelector('.adhoc-value').value) || 0,
+    })).sort((a,b) => a.month - b.month);
+  }
+
+  function addAdhocRow() {
+    const data = getAdhocData();
+    data.push({month: 0, value: 0});
+    renderAdhocTable(data);
+    // Focus the new month input
+    const rows = document.querySelectorAll('#adhocBody tr');
+    if (rows.length) rows[rows.length-1].querySelector('.adhoc-month').focus();
+  }
+
+  function deleteAdhocRow(btn) {
+    btn.closest('tr').remove();
+  }
+
+  function clearAdhoc() {
+    renderAdhocTable([]);
+  }
+
+  function loadLaGrulla() {
+    renderAdhocTable(LA_GRULLA_ADHOC);
+  }
+
+  // Update header label on type switch
+  document.querySelectorAll('input[name="adhocType"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isPct = document.getElementById('typePercent').checked;
+      document.getElementById('adhocValueHeader').textContent = isPct ? 'Value (%)' : 'Value ($)';
+    });
+  });
+
+  // Profile toggle visibility
+  document.querySelectorAll('input[name="amortProfile"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isBullet = document.getElementById('profileBullet').checked;
+      document.getElementById('adhocSection').style.display = isBullet ? 'none' : 'block';
+      document.getElementById('profileHint').textContent = isBullet
+        ? 'Bullet: full principal repaid at final period.'
+        : 'Ad-hoc: enter month offsets and amortization amounts below.';
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // Formatting helpers
+  // ─────────────────────────────────────────────
+  const fmt = {
+    currency: v => v === 0 ? '<span class="cell-zero">—</span>'
+                           : '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}),
+    pct:      v => v.toFixed(4) + '%',
+    num:      v => v === 0 ? '<span class="cell-zero">—</span>' : v.toLocaleString(),
+  };
+
+  // ─────────────────────────────────────────────
+  // Form submission → Calculate
+  // ─────────────────────────────────────────────
+  document.getElementById('calcForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    hideError();
+    showLoading(true);
+
+    const profile = document.querySelector('input[name="amortProfile"]:checked').value;
+    const usePercent = document.getElementById('typePercent').checked;
+
+    const payload = {
+      loan_amount:          parseFloat(document.getElementById('loanAmount').value),
+      num_periods:          parseInt(document.getElementById('numPeriods').value),
+      draw_period:          parseInt(document.getElementById('drawPeriod').value),
+      grace_periods:        parseInt(document.getElementById('numPeriods').value),
+      frequency:            document.getElementById('frequency').value,
+      margin_draw:          parseFloat(document.getElementById('marginDraw').value) / 100,
+      margin_after:         parseFloat(document.getElementById('marginAfter').value) / 100,
+      step_up:              parseFloat(document.getElementById('stepUp').value) / 100,
+      step_up_period:       parseInt(document.getElementById('stepUpPeriod').value),
+      upfront_fee_rate:     parseFloat(document.getElementById('upfrontFee').value) / 100,
+      commitment_fee_rate:  parseFloat(document.getElementById('commitmentFee').value) / 100,
+      closing_date:         document.getElementById('closingDate').value,
+      disbursement_date:    document.getElementById('disbursementDate').value,
+      amortization_profile: profile,
+      adhoc_table:          profile === 'Ad-hoc' ? getAdhocData() : [],
+      adhoc_use_percent:    usePercent,
+    };
+
+    try {
+      const res = await fetch('/calculate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!data.success) throw new Error(data.error || 'Unknown error');
+
+      renderResults(data, payload);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      showLoading(false);
+    }
+  });
+
+  // ─────────────────────────────────────────────
+  // Render results
+  // ─────────────────────────────────────────────
+  function renderResults(data, payload) {
+    document.getElementById('placeholderBox').style.display = 'none';
+    document.getElementById('resultsBox').style.display = 'block';
+
+    // Summary cards
+    document.getElementById('resAllIn').textContent = data.irr.all_in_margin.toFixed(4) + '%';
+    document.getElementById('resWAL').textContent   = data.wal.toFixed(3) + ' yrs';
+
+    const vld = data.validation;
+    const isOk = vld.draw_status === 'OK';
+    const badgeEl = document.getElementById('resValidation');
+    badgeEl.innerHTML = `<span class="badge-status ${isOk ? 'badge-ok' : 'badge-warn'}">${vld.draw_status}</span>`;
+    document.getElementById('resValidationDetail').innerHTML =
+      `Draws: $${vld.draws_total.toLocaleString('en-US',{minimumFractionDigits:0})} &nbsp;|&nbsp; ` +
+      `Amort: $${vld.amort_total.toLocaleString('en-US',{minimumFractionDigits:0})} &nbsp;|&nbsp; ` +
+      `Final Bal: $${vld.final_balance.toLocaleString('en-US',{minimumFractionDigits:0})}`;
+
+    // IRR breakdown
+    const irr = data.irr;
+    const cumSpread    = irr.ir_spread;
+    const cumUpfront   = cumSpread + irr.upfront_impact;
+    const cumAllIn     = irr.all_in_margin;
+    document.getElementById('irrBreakdown').innerHTML = `
+      <tr>
+        <td><i class="bi bi-plus-circle text-primary me-1"></i>IR Spread</td>
+        <td class="text-end text-num">${fmt.pct(irr.ir_spread)}</td>
+        <td class="text-end text-num">${fmt.pct(cumSpread)}</td>
+        <td class="text-muted small">Base interest rate margin</td>
+      </tr>
+      <tr>
+        <td><i class="bi bi-plus-circle text-warning me-1"></i>Upfront Fee Impact</td>
+        <td class="text-end text-num">${fmt.pct(irr.upfront_impact)}</td>
+        <td class="text-end text-num">${fmt.pct(cumUpfront)}</td>
+        <td class="text-muted small">One-time fee, spread over WAL</td>
+      </tr>
+      <tr>
+        <td><i class="bi bi-plus-circle text-success me-1"></i>Commitment Fee Impact</td>
+        <td class="text-end text-num">${fmt.pct(irr.commitment_impact)}</td>
+        <td class="text-end text-num">${fmt.pct(cumAllIn)}</td>
+        <td class="text-muted small">Fee on undrawn balance</td>
+      </tr>
+      <tr class="row-total">
+        <td><strong>= All-In Margin (IRR)</strong></td>
+        <td class="text-end text-num"><strong>${fmt.pct(irr.all_in_margin)}</strong></td>
+        <td class="text-end text-num"><strong>${fmt.pct(irr.all_in_margin)}</strong></td>
+        <td class="text-muted small">Annualized effective rate</td>
+      </tr>`;
+
+    // Amortization schedule
+    const tbody = document.getElementById('scheduleBody');
+    tbody.innerHTML = '';
+    data.schedule.forEach(row => {
+      const isDraw  = row.draws > 0;
+      const isAmort = row.amortization > 0;
+      const tr = document.createElement('tr');
+      if (isDraw)  tr.classList.add('row-draw');
+      if (isAmort) tr.classList.add('row-amort');
+      tr.innerHTML = `
+        <td>${row.period}</td>
+        <td>${row.date}</td>
+        <td class="text-end">${row.days || '—'}</td>
+        <td class="text-end text-num">${row.beginning_bal > 0 ? '$'+row.beginning_bal.toLocaleString('en-US',{minimumFractionDigits:2}) : '<span class="cell-zero">—</span>'}</td>
+        <td class="text-end text-num">${row.draws > 0 ? '$'+row.draws.toLocaleString('en-US',{minimumFractionDigits:2}) : '<span class="cell-zero">—</span>'}</td>
+        <td class="text-end text-num">${row.amortization > 0 ? '$'+row.amortization.toLocaleString('en-US',{minimumFractionDigits:2}) : '<span class="cell-zero">—</span>'}</td>
+        <td class="text-end text-num">${row.interest > 0 ? '$'+row.interest.toLocaleString('en-US',{minimumFractionDigits:2}) : '<span class="cell-zero">—</span>'}</td>
+        <td class="text-end text-num">${row.upfront_fee > 0 ? '$'+row.upfront_fee.toLocaleString('en-US',{minimumFractionDigits:2}) : '<span class="cell-zero">—</span>'}</td>
+        <td class="text-end text-num">${row.commitment_fee > 0 ? '$'+row.commitment_fee.toLocaleString('en-US',{minimumFractionDigits:2}) : '<span class="cell-zero">—</span>'}</td>
+        <td class="text-end text-num"><strong>$${row.ending_bal.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('scheduleFooter').textContent =
+      `${data.schedule.length} periods  ·  ` +
+      `${payload.frequency}  ·  ` +
+      `Profile: ${payload.amortization_profile}`;
+
+    // Store payload for CSV export
+    window._lastPayload = payload;
+  }
+
+  // ─────────────────────────────────────────────
+  // CSV Export
+  // ─────────────────────────────────────────────
+  async function exportCSV() {
+    if (!window._lastPayload) return;
+    try {
+      const res = await fetch('/export/csv', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(window._lastPayload),
+      });
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'amortization_schedule.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      showError('Export failed: ' + e.message);
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // UI helpers
+  // ─────────────────────────────────────────────
+  function showLoading(on) {
+    document.getElementById('loadingOverlay').classList.toggle('show', on);
+  }
+  function showError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
+    document.getElementById('errorBox').style.display = 'flex';
+  }
+  function hideError() {
+    document.getElementById('errorBox').style.display = 'none';
+  }
+
+  function resetForm() {
+    document.getElementById('loanAmount').value = '1300000';
+    document.getElementById('numPeriods').value = '50';
+    document.getElementById('drawPeriod').value = '1';
+    document.getElementById('frequency').value = 'Semiannually';
+    document.getElementById('marginDraw').value = '1.58';
+    document.getElementById('marginAfter').value = '1.58';
+    document.getElementById('stepUp').value = '0';
+    document.getElementById('stepUpPeriod').value = '0';
+    document.getElementById('upfrontFee').value = '0';
+    document.getElementById('commitmentFee').value = '0';
+    document.getElementById('closingDate').value = '2026-04-01';
+    document.getElementById('disbursementDate').value = '2026-04-01';
+    document.getElementById('profileAdhoc').checked = true;
+    document.getElementById('profileAdhoc').dispatchEvent(new Event('change'));
+    document.getElementById('typePercent').checked = true;
+    document.getElementById('adhocValueHeader').textContent = 'Value (%)';
+    loadLaGrulla();
+  }
+
+  // ─────────────────────────────────────────────
+  // Init: load La Grulla data on page load
+  // ─────────────────────────────────────────────
+  loadLaGrulla();
+  </script>
+</body>
+</html>
