@@ -4,7 +4,8 @@ NADB Infrastructure Finance Tool
 Calculates effective interest rates (IRR) and weighted average life for loan transactions.
 """
 
-from flask import Flask, render_template, request, jsonify, Response
+import os
+from flask import Flask, render_template, request, jsonify, Response, session, redirect, url_for
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import numpy_financial as npf
@@ -15,6 +16,7 @@ import json
 import math
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'nadb-aim-dev-secret-2024')
 
 
 # ---------------------------------------------------------------------------
@@ -92,12 +94,27 @@ def build_schedule(params: dict) -> list:
     upfront_fee_rate = float(params.get("upfront_fee_rate", 0))
     commit_fee_rate  = float(params.get("commitment_fee_rate", 0))
     disbursement_str = params["disbursement_date"]
-    amort_profile    = params["amortization_profile"]  # Bullet | Ad-hoc
+    amort_profile    = params["amortization_profile"]  # Bullet | Ad-hoc | Mortgage
     adhoc_table      = params.get("adhoc_table", [])    # [{month, value}]
     adhoc_use_pct    = params.get("adhoc_use_percent", True)
 
     freq_months = {"Monthly": 1, "Quarterly": 3, "Semiannually": 6}[frequency]
     disburse_dt = parse_date(disbursement_str)
+
+    # Pre-compute mortgage PMT if Mortgage profile is selected
+    mortgage_pmt = 0.0
+    mortgage_r   = 0.0
+    if amort_profile == "Mortgage":
+        mortgage_annual_rate = float(params.get("mortgage_rate", 0))  # decimal e.g. 0.05
+        mortgage_amort_years = float(params.get("mortgage_amort_years", 0))
+        periods_per_year     = 12.0 / freq_months
+        mortgage_r           = mortgage_annual_rate / periods_per_year
+        n_amort              = int(round(mortgage_amort_years * periods_per_year))
+        if n_amort > 0:
+            if mortgage_r > 0:
+                mortgage_pmt = loan_amount * mortgage_r / (1 - (1 + mortgage_r) ** -n_amort)
+            else:
+                mortgage_pmt = loan_amount / n_amort
 
     schedule = []
     balance = 0.0
@@ -163,8 +180,8 @@ def build_schedule(params: dict) -> list:
                     amort = beginning_bal   # Full repayment at final period
                 else:
                     amort = 0.0
-            else:
-                # Ad-hoc: look up by month offset from disbursement date
+            elif amort_profile == "Ad-hoc":
+                # Look up by month offset from disbursement date
                 period_months_offset = (
                     (p_date.year - disburse_dt.year) * 12
                     + (p_date.month - disburse_dt.month)
@@ -173,6 +190,18 @@ def build_schedule(params: dict) -> list:
                                       adhoc_table, adhoc_use_pct)
                 # Cap to remaining balance (never let balance go negative)
                 amort = min(amort, beginning_bal)
+            elif amort_profile == "Mortgage":
+                if p <= draw_period:
+                    amort = 0.0
+                else:
+                    # Fixed PMT minus the mortgage-rate interest component
+                    mort_interest = mortgage_r * beginning_bal
+                    amort = max(0.0, min(mortgage_pmt - mort_interest, beginning_bal))
+                    # On the final period, clear any remaining balance
+                    if p == num_periods:
+                        amort = beginning_bal
+            else:
+                amort = 0.0
 
             row["amortization"] = round(amort, 6)
 
@@ -300,13 +329,37 @@ def validate(schedule: list, loan_amount: float) -> dict:
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    loan_params = session.get('loan_params', {})
+    return render_template("index.html", loan_params=loan_params)
+
+
+@app.route("/save-params", methods=["POST"])
+def save_params():
+    """Save loan parameters to session and confirm redirect to amortization screen."""
+    try:
+        data = request.get_json(force=True)
+        session['loan_params'] = data
+        return jsonify({"success": True, "redirect": "/amortization"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+
+@app.route("/amortization")
+def amortization():
+    """Render the amortization profile configuration screen."""
+    loan_params = session.get('loan_params', {})
+    if not loan_params:
+        return redirect(url_for('index'))
+    return render_template("amortization.html", loan_params=loan_params)
 
 
 @app.route("/calculate", methods=["POST"])
 def calculate():
     try:
-        params = request.get_json(force=True)
+        # Merge session loan params with amortization params from request
+        amort_params = request.get_json(force=True)
+        loan_params  = session.get('loan_params', {})
+        params       = {**loan_params, **amort_params}
 
         freq_months = {"Monthly": 1, "Quarterly": 3, "Semiannually": 6}[params["frequency"]]
 
@@ -346,7 +399,11 @@ def calculate():
 @app.route("/export/csv", methods=["POST"])
 def export_csv():
     try:
-        params = request.get_json(force=True)
+        # Merge session loan params with amortization params from request
+        amort_params = request.get_json(force=True)
+        loan_params  = session.get('loan_params', {})
+        params       = {**loan_params, **amort_params}
+
         freq_months = {"Monthly": 1, "Quarterly": 3, "Semiannually": 6}[params["frequency"]]
 
         schedule = build_schedule(params)
