@@ -351,9 +351,10 @@
               </div>
             </div>
             <div class="col-5">
-              <label class="form-label">Number of Periods</label>
-              <input type="number" id="numPeriods" class="form-control" value="50"
-                     min="1" max="360" required />
+              <label class="form-label">Loan Term (Years)</label>
+              <input type="number" id="loanTerm" class="form-control" value="25"
+                     min="0.25" step="0.25" required />
+              <div class="form-text">Auto-calculates periods</div>
             </div>
           </div>
           <div class="row g-2 mb-3">
@@ -745,22 +746,83 @@
   };
 
   // ─────────────────────────────────────────────
+  // Validation helper
+  // ─────────────────────────────────────────────
+  function validateForm() {
+    const errors = [];
+
+    const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+    if (isNaN(loanAmount) || loanAmount <= 0) {
+      errors.push('Loan amount must be greater than 0');
+    }
+
+    const loanTerm = parseFloat(document.getElementById('loanTerm').value);
+    if (isNaN(loanTerm) || loanTerm <= 0) {
+      errors.push('Loan term must be greater than 0');
+    }
+
+    const drawPeriod = parseInt(document.getElementById('drawPeriod').value);
+    const frequency = document.getElementById('frequency').value;
+    const freqMultiplier = {'Monthly': 12, 'Quarterly': 4, 'Semiannually': 2}[frequency];
+    const numPeriods = Math.round(loanTerm * freqMultiplier);
+
+    if (drawPeriod < 0) {
+      errors.push('Draw period cannot be negative');
+    }
+    if (drawPeriod > numPeriods) {
+      errors.push(`Draw period (${drawPeriod}) cannot exceed number of periods (${numPeriods})`);
+    }
+
+    const closingDate = document.getElementById('closingDate').value;
+    const disbursementDate = document.getElementById('disbursementDate').value;
+    if (!closingDate) {
+      errors.push('Closing date is required');
+    }
+    if (!disbursementDate) {
+      errors.push('Disbursement date is required');
+    }
+
+    const marginDraw = parseFloat(document.getElementById('marginDraw').value);
+    const marginAfter = parseFloat(document.getElementById('marginAfter').value);
+    if (isNaN(marginDraw) || marginDraw < 0) {
+      errors.push('Margin (draw period) must be non-negative');
+    }
+    if (isNaN(marginAfter) || marginAfter < 0) {
+      errors.push('Margin (after draw) must be non-negative');
+    }
+
+    return errors;
+  }
+
+  // ─────────────────────────────────────────────
   // Form submission → Calculate
   // ─────────────────────────────────────────────
   document.getElementById('calcForm').addEventListener('submit', async e => {
     e.preventDefault();
     hideError();
+
+    // Validate form inputs
+    const errors = validateForm();
+    if (errors.length > 0) {
+      showError(errors.join('<br>'));
+      return;
+    }
+
     showLoading(true);
 
     const profile = document.querySelector('input[name="amortProfile"]:checked').value;
     const usePercent = document.getElementById('typePercent').checked;
+    const frequency = document.getElementById('frequency').value;
+    const loanTerm = parseFloat(document.getElementById('loanTerm').value);
+    const freqMultiplier = {'Monthly': 12, 'Quarterly': 4, 'Semiannually': 2}[frequency];
+    const numPeriods = Math.round(loanTerm * freqMultiplier);
 
     const payload = {
       loan_amount:          parseFloat(document.getElementById('loanAmount').value),
-      num_periods:          parseInt(document.getElementById('numPeriods').value),
+      num_periods:          numPeriods,
       draw_period:          parseInt(document.getElementById('drawPeriod').value),
-      grace_periods:        parseInt(document.getElementById('numPeriods').value),
-      frequency:            document.getElementById('frequency').value,
+      grace_periods:        numPeriods,
+      frequency:            frequency,
       margin_draw:          parseFloat(document.getElementById('marginDraw').value) / 100,
       margin_after:         parseFloat(document.getElementById('marginAfter').value) / 100,
       step_up:              parseFloat(document.getElementById('stepUp').value) / 100,
@@ -905,7 +967,12 @@
     document.getElementById('loadingOverlay').classList.toggle('show', on);
   }
   function showError(msg) {
-    document.getElementById('errorMsg').textContent = msg;
+    const errorMsgEl = document.getElementById('errorMsg');
+    if (msg.includes('<')) {
+      errorMsgEl.innerHTML = msg;
+    } else {
+      errorMsgEl.textContent = msg;
+    }
     document.getElementById('errorBox').style.display = 'flex';
   }
   function hideError() {
@@ -914,7 +981,7 @@
 
   function resetForm() {
     document.getElementById('loanAmount').value = '1300000';
-    document.getElementById('numPeriods').value = '50';
+    document.getElementById('loanTerm').value = '25';
     document.getElementById('drawPeriod').value = '1';
     document.getElementById('frequency').value = 'Semiannually';
     document.getElementById('marginDraw').value = '1.58';
